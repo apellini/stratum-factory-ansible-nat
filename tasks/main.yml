@@ -24,7 +24,7 @@
     chain: POSTROUTING
     out_interface: "{{ nat_external_interface }}"
     jump: MASQUERADE
-  notify: persist iptables
+  notify: Persist iptables rules
 
 - name: Allow FORWARD from internal to external interface
   ansible.builtin.iptables:
@@ -32,7 +32,7 @@
     in_interface: "{{ nat_internal_interface }}"
     out_interface: "{{ nat_external_interface }}"
     jump: ACCEPT
-  notify: persist iptables
+  notify: Persist iptables rules
 
 - name: Allow FORWARD for established/related connections returning from external
   ansible.builtin.iptables:
@@ -43,4 +43,4 @@
       - ESTABLISHED
       - RELATED
     jump: ACCEPT
-  notify: persist iptables
+  notify: Persist iptables rules
