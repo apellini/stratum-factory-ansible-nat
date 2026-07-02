@@ -1,0 +1,31 @@
+---
+- name: Verify
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Read net.ipv4.ip_forward sysctl value
+      ansible.builtin.command:
+        cmd: sysctl -n net.ipv4.ip_forward
+      register: ip_forward_value
+      changed_when: false
+
+    - name: Assert IPv4 forwarding is enabled
+      ansible.builtin.assert:
+        that:
+          - ip_forward_value.stdout | trim == "1"
+        fail_msg: "net.ipv4.ip_forward is not 1 (got: {{ ip_forward_value.stdout | trim }})"
+        success_msg: "net.ipv4.ip_forward is 1 — forwarding enabled"
+
+    - name: Dump iptables NAT table rules
+      ansible.builtin.command:
+        cmd: iptables -t nat -S
+      register: nat_rules
+      changed_when: false
+
+    - name: Assert MASQUERADE rule is present in NAT table
+      ansible.builtin.assert:
+        that:
+          - "'MASQUERADE' in nat_rules.stdout"
+        fail_msg: "MASQUERADE rule not found in iptables nat table. Rules: {{ nat_rules.stdout }}"
+        success_msg: "MASQUERADE rule present in iptables nat table"

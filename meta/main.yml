@@ -1,0 +1,28 @@
+---
+galaxy_info:
+  author: apellini
+  role_name: nat
+  namespace: stratum_factory
+  description: >
+    iptables NAT / IP-masquerade for the STRATUM dev bastion.
+    Enables IPv4 forwarding via sysctl, installs iptables-persistent,
+    and sets up MASQUERADE + FORWARD rules so internal VMs can reach
+    the internet through the bastion's external interface.
+  license: MIT
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - "24.04"
+  galaxy_tags:
+    - nat
+    - iptables
+    - masquerade
+    - networking
+    - stratum
+
+dependencies: []
+
+collections:
+  - ansible.posix
+  - ansible.builtin

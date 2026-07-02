@@ -1,0 +1,5 @@
+.cache/
+collections/
+roles/
+*.retry
+.molecule/

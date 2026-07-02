@@ -1,0 +1,46 @@
+---
+# stratum_factory.nat — tasks/main.yml
+# Enables IPv4 forwarding and configures iptables MASQUERADE NAT.
+# All interface names and paths come from role defaults (or caller overrides).
+
+- name: Enable IPv4 forwarding via sysctl (persistent)
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    state: present
+    sysctl_file: "{{ nat_sysctl_conf }}"
+    reload: true
+
+- name: Install iptables-persistent (non-interactive)
+  ansible.builtin.package:
+    name: iptables-persistent
+    state: present
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+
+- name: MASQUERADE outbound traffic on external interface
+  ansible.builtin.iptables:
+    table: nat
+    chain: POSTROUTING
+    out_interface: "{{ nat_external_interface }}"
+    jump: MASQUERADE
+  notify: persist iptables
+
+- name: Allow FORWARD from internal to external interface
+  ansible.builtin.iptables:
+    chain: FORWARD
+    in_interface: "{{ nat_internal_interface }}"
+    out_interface: "{{ nat_external_interface }}"
+    jump: ACCEPT
+  notify: persist iptables
+
+- name: Allow FORWARD for established/related connections returning from external
+  ansible.builtin.iptables:
+    chain: FORWARD
+    in_interface: "{{ nat_external_interface }}"
+    out_interface: "{{ nat_internal_interface }}"
+    ctstate:
+      - ESTABLISHED
+      - RELATED
+    jump: ACCEPT
+  notify: persist iptables

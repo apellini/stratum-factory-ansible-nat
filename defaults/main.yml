@@ -1,0 +1,12 @@
+---
+# Interface facing the internet (with default route / public IP)
+nat_external_interface: eth0
+
+# Interface facing the internal VPC (receives forwarded packets from k3s/clab)
+nat_internal_interface: eth1
+
+# CIDR of the internal VPC subnet (informational; used in documentation and verify)
+nat_internal_cidr: "10.100.0.0/24"
+
+# Path where the sysctl persistence file is written
+nat_sysctl_conf: /etc/sysctl.d/99-stratum-nat.conf

@@ -1,0 +1,39 @@
+---
+argument_specs:
+  main:
+    short_description: iptables NAT / IP-masquerade for the STRATUM dev bastion
+    description:
+      - Enables IPv4 forwarding via sysctl and configures iptables MASQUERADE NAT.
+      - All inputs are provided through role defaults; no required variables.
+    options:
+      nat_external_interface:
+        type: str
+        default: eth0
+        description:
+          - Name of the network interface connected to the internet.
+          - Used as the POSTROUTING MASQUERADE target and the FORWARD out_interface.
+          - "Example: eth0, ens4"
+
+      nat_internal_interface:
+        type: str
+        default: eth1
+        description:
+          - Name of the network interface connected to the internal VPC.
+          - Packets arriving on this interface are forwarded to nat_external_interface.
+          - "Example: eth1, ens5"
+
+      nat_internal_cidr:
+        type: str
+        default: "10.100.0.0/24"
+        description:
+          - CIDR notation of the internal subnet.
+          - Informational; used in documentation and molecule verify assertions.
+          - "Example: 10.100.0.0/24"
+
+      nat_sysctl_conf:
+        type: str
+        default: /etc/sysctl.d/99-stratum-nat.conf
+        description:
+          - Absolute path to the sysctl drop-in file that persists ip_forward across reboots.
+          - Must be writable by the Ansible connection user (usually root).
+          - "Example: /etc/sysctl.d/99-stratum-nat.conf"

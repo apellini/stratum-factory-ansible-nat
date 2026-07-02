@@ -1,0 +1,25 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: docker
+
+platforms:
+  - name: instance
+    image: ubuntu:24.04
+    privileged: true
+    cap_add:
+      - NET_ADMIN
+    command: /bin/bash -c "while true; do sleep 3600; done"
+    pre_build_image: true
+
+provisioner:
+  name: ansible
+  inventory:
+    host_vars:
+      instance:
+        ansible_user: root
+
+verifier:
+  name: ansible
