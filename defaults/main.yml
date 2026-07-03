@@ -10,3 +10,14 @@ nat_internal_cidr: "10.100.0.0/24"
 
 # Path where the sysctl persistence file is written
 nat_sysctl_conf: /etc/sysctl.d/99-stratum-nat.conf
+
+# When true, add an explicit main-table route for nat_internal_cidr via nat_internal_interface
+# so bastion-originated traffic (ProxyJump inner hop) egresses the internal NIC rather than
+# falling through to the eth0 default route.
+nat_internal_route_manage: true
+
+# Optional explicit source IP for the route (empty = let kernel pick the interface address)
+nat_internal_ip: ""
+
+# Absolute path for the systemd oneshot unit that persists the route across reboots
+nat_internal_route_unit: /etc/systemd/system/stratum-internal-route.service
