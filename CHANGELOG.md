@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.0] - 2026-07-03
+
+### Changed
+
+- `nat_external_interface` and `nat_internal_interface` defaults changed from `eth0`/`eth1`
+  to `""` (auto-detect). Ubuntu 24.04 on GCP uses predictable names (`ens4`/`ens5`), so
+  hardcoded `eth*` names caused a "Cannot find device eth1" failure on the live bastion and
+  silently-broken MASQUERADE/FORWARD rules on `eth0` (D-INFRA-21).
+
+### Added
+
+- Interface auto-detection block in `tasks/main.yml`: external iface resolved from
+  `ansible_facts.default_ipv4.interface`; internal iface resolved by matching `nat_internal_ip`
+  against gathered interface facts. Explicit overrides via `nat_external_interface` /
+  `nat_internal_interface` still take precedence (exercised by molecule tests).
+- `assert` task fails early with a descriptive message if resolution produces an empty name.
+- Template `stratum-internal-route.service.j2` now uses the resolved `_nat_internal_iface`
+  fact variable so the systemd unit references the actual kernel interface name.
+
 ## [0.2.0] - 2026-07-03
 
 ### Added

@@ -4,23 +4,27 @@ argument_specs:
     short_description: iptables NAT / IP-masquerade for the STRATUM dev bastion
     description:
       - Enables IPv4 forwarding via sysctl and configures iptables MASQUERADE NAT.
-      - All inputs are provided through role defaults; no required variables.
+      - Interface names are auto-detected from Ansible facts when the defaults are
+        left empty; set them explicitly to override (e.g. in molecule tests).
     options:
       nat_external_interface:
         type: str
-        default: eth0
+        default: ""
         description:
           - Name of the network interface connected to the internet.
           - Used as the POSTROUTING MASQUERADE target and the FORWARD out_interface.
-          - "Example: eth0, ens4"
+          - Empty string (default) auto-detects from ansible_facts.default_ipv4.interface.
+          - "Example: ens4 (GCP Ubuntu 24.04 NIC0), eth0 (molecule / legacy)"
 
       nat_internal_interface:
         type: str
-        default: eth1
+        default: ""
         description:
           - Name of the network interface connected to the internal VPC.
           - Packets arriving on this interface are forwarded to nat_external_interface.
-          - "Example: eth1, ens5"
+          - Empty string (default) auto-detects the interface whose IPv4 address matches
+            nat_internal_ip; nat_internal_ip must be non-empty for detection to succeed.
+          - "Example: ens5 (GCP Ubuntu 24.04 NIC1), eth1 (molecule / legacy)"
 
       nat_internal_cidr:
         type: str
@@ -42,7 +46,8 @@ argument_specs:
         type: bool
         default: true
         description:
-          - When true, install an explicit main-table route for nat_internal_cidr via nat_internal_interface.
+          - When true, install an explicit main-table route for nat_internal_cidr via the
+            resolved internal interface.
           - Ensures bastion-originated traffic to internal nodes (ProxyJump inner hop) egresses the internal NIC.
           - Set to false only if the route is managed externally (e.g., by cloud agent metadata).
 
@@ -52,6 +57,7 @@ argument_specs:
         description:
           - Optional explicit source address for the internal-subnet route (the src attribute).
           - Empty string lets the kernel select the interface address automatically.
+          - Also drives internal interface auto-detection when nat_internal_interface is "".
           - "Example: 10.100.0.2"
 
       nat_internal_route_unit:

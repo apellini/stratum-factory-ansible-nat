@@ -1,7 +1,9 @@
 ---
 # stratum_factory.nat — tasks/main.yml
 # Enables IPv4 forwarding and configures iptables MASQUERADE NAT.
-# All interface names and paths come from role defaults (or caller overrides).
+# All interface names come from role defaults (or caller overrides); when the
+# defaults are empty ("") the role auto-detects them from Ansible gathered facts
+# so the role works transparently on any NIC naming scheme (eth*, ens*, etc.).
 
 - name: Enable IPv4 forwarding via sysctl (persistent)
   ansible.posix.sysctl:
@@ -24,27 +26,64 @@
   environment:
     DEBIAN_FRONTEND: noninteractive
 
+# ── Interface resolution ───────────────────────────────────────────────────────
+# When a caller sets nat_external_interface / nat_internal_interface explicitly
+# those values are used as-is (override path — also exercised by molecule tests).
+# When the defaults are empty (""), the role derives the names from gathered
+# facts: external from the default-route interface; internal from the interface
+# carrying nat_internal_ip.  The assert below catches misconfiguration early.
+
+- name: Resolve external interface (explicit override, else default-route interface)
+  ansible.builtin.set_fact:
+    _nat_external_iface: >-
+      {{ nat_external_interface if (nat_external_interface | length > 0)
+         else (ansible_facts.default_ipv4.interface | default('')) }}
+
+- name: Resolve internal interface (explicit override, else interface holding nat_internal_ip)
+  ansible.builtin.set_fact:
+    _nat_internal_iface: >-
+      {{ nat_internal_interface if (nat_internal_interface | length > 0)
+         else (ansible_facts.interfaces
+               | map('extract', ansible_facts)
+               | selectattr('ipv4', 'defined')
+               | selectattr('ipv4.address', 'equalto', nat_internal_ip)
+               | map(attribute='device') | first | default('')) }}
+
+- name: Assert both NAT interfaces resolved
+  ansible.builtin.assert:
+    that:
+      - _nat_external_iface | length > 0
+      - _nat_internal_iface | length > 0
+    fail_msg: >-
+      Could not resolve NAT interfaces (external='{{ _nat_external_iface }}',
+      internal='{{ _nat_internal_iface }}'). Set nat_external_interface /
+      nat_internal_interface explicitly, or ensure nat_internal_ip
+      ('{{ nat_internal_ip }}') is live on an interface and facts are gathered.
+    success_msg: >-
+      NAT interfaces resolved: external={{ _nat_external_iface }},
+      internal={{ _nat_internal_iface }}
+
 - name: MASQUERADE outbound traffic on external interface
   ansible.builtin.iptables:
     table: nat
     chain: POSTROUTING
-    out_interface: "{{ nat_external_interface }}"
+    out_interface: "{{ _nat_external_iface }}"
     jump: MASQUERADE
   notify: Persist iptables rules
 
 - name: Allow FORWARD from internal to external interface
   ansible.builtin.iptables:
     chain: FORWARD
-    in_interface: "{{ nat_internal_interface }}"
-    out_interface: "{{ nat_external_interface }}"
+    in_interface: "{{ _nat_internal_iface }}"
+    out_interface: "{{ _nat_external_iface }}"
     jump: ACCEPT
   notify: Persist iptables rules
 
 - name: Allow FORWARD for established/related connections returning from external
   ansible.builtin.iptables:
     chain: FORWARD
-    in_interface: "{{ nat_external_interface }}"
-    out_interface: "{{ nat_internal_interface }}"
+    in_interface: "{{ _nat_external_iface }}"
+    out_interface: "{{ _nat_internal_iface }}"
     ctstate:
       - ESTABLISHED
       - RELATED
@@ -54,7 +93,7 @@
 # ── Internal-subnet route (fixes ProxyJump 2nd-hop on multi-NIC bastion) ─────
 # On a GCP dual-NIC VM the secondary interface's subnet route may not be in the
 # main routing table. Without it, bastion-originated traffic to 10.100.0.0/24
-# falls through to the eth0 default route, hits MASQUERADE, and never reaches
+# falls through to the default route, hits MASQUERADE, and never reaches
 # internal nodes. ip route replace is idempotent (add-or-update).
 
 - name: Check current internal-subnet route
@@ -68,10 +107,10 @@
   ansible.builtin.command:
     cmd: >-
       ip route replace {{ nat_internal_cidr }}
-      dev {{ nat_internal_interface }}
+      dev {{ _nat_internal_iface }}
       {{ (nat_internal_ip != '') | ternary('src ' ~ nat_internal_ip, '') }}
   changed_when: >-
-    ('dev ' ~ nat_internal_interface) not in _nat_internal_route_current.stdout
+    ('dev ' ~ _nat_internal_iface) not in _nat_internal_route_current.stdout
   when: nat_internal_route_manage | bool
 
 - name: Template systemd oneshot unit for route persistence

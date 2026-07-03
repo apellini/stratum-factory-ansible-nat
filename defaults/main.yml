@@ -1,9 +1,14 @@
 ---
-# Interface facing the internet (with default route / public IP)
-nat_external_interface: eth0
+# Interface facing the internet (with default route / public IP).
+# Empty string = auto-detect from ansible_facts.default_ipv4.interface.
+# Override when the caller knows the exact name (e.g. molecule tests use eth0).
+nat_external_interface: ""
 
-# Interface facing the internal VPC (receives forwarded packets from k3s/clab)
-nat_internal_interface: eth1
+# Interface facing the internal VPC (receives forwarded packets from k3s/clab).
+# Empty string = auto-detect: the role finds the interface whose IPv4 address
+# matches nat_internal_ip.  nat_internal_ip must be non-empty for this to work.
+# Override when the caller knows the exact name (e.g. molecule tests use eth0).
+nat_internal_interface: ""
 
 # CIDR of the internal VPC subnet (informational; used in documentation and verify)
 nat_internal_cidr: "10.100.0.0/24"
@@ -11,12 +16,13 @@ nat_internal_cidr: "10.100.0.0/24"
 # Path where the sysctl persistence file is written
 nat_sysctl_conf: /etc/sysctl.d/99-stratum-nat.conf
 
-# When true, add an explicit main-table route for nat_internal_cidr via nat_internal_interface
-# so bastion-originated traffic (ProxyJump inner hop) egresses the internal NIC rather than
-# falling through to the eth0 default route.
+# When true, add an explicit main-table route for nat_internal_cidr via the
+# resolved internal interface so bastion-originated traffic (ProxyJump inner hop)
+# egresses the internal NIC rather than falling through to the default route.
 nat_internal_route_manage: true
 
-# Optional explicit source IP for the route (empty = let kernel pick the interface address)
+# Optional explicit source IP for the route (empty = let kernel pick the interface address).
+# Also drives internal interface auto-detection when nat_internal_interface is "".
 nat_internal_ip: ""
 
 # Absolute path for the systemd oneshot unit that persists the route across reboots

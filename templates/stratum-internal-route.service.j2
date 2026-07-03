@@ -1,5 +1,5 @@
 [Unit]
-Description=STRATUM internal-subnet static route ({{ nat_internal_cidr }} via {{ nat_internal_interface }})
+Description=STRATUM internal-subnet static route ({{ nat_internal_cidr }} via {{ _nat_internal_iface }})
 Documentation=https://github.com/apellini/stratum-factory-ansible-nat
 Wants=network-online.target
 After=network-online.target
@@ -7,7 +7,7 @@ After=network-online.target
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/sbin/ip route replace {{ nat_internal_cidr }} dev {{ nat_internal_interface }}{{ (nat_internal_ip != '') | ternary(' src ' ~ nat_internal_ip, '') }}
+ExecStart=/usr/sbin/ip route replace {{ nat_internal_cidr }} dev {{ _nat_internal_iface }}{{ (nat_internal_ip != '') | ternary(' src ' ~ nat_internal_ip, '') }}
 
 [Install]
 WantedBy=multi-user.target

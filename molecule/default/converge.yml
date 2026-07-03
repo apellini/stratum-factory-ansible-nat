@@ -9,6 +9,9 @@
         # Docker containers have a single NIC (eth0). Mirror it for both
         # external and internal so the MASQUERADE/FORWARD rules apply on the
         # same interface, keeping existing assertions valid.
+        # These explicit overrides exercise the override code path; the
+        # auto-detect path (empty defaults) is validated on the live GCP bastion
+        # where ens4/ens5 naming applies (D-INFRA-21).
         nat_external_interface: eth0
         nat_internal_interface: eth0
         # Use a non-default test CIDR so the route assertion is unambiguous.
