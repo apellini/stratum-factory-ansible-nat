@@ -11,6 +11,12 @@
     sysctl_file: "{{ nat_sysctl_conf }}"
     reload: true
 
+- name: Update apt package cache (Debian family)
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
 - name: Install iptables-persistent (non-interactive)
   ansible.builtin.package:
     name: iptables-persistent
