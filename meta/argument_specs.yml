@@ -37,3 +37,27 @@ argument_specs:
           - Absolute path to the sysctl drop-in file that persists ip_forward across reboots.
           - Must be writable by the Ansible connection user (usually root).
           - "Example: /etc/sysctl.d/99-stratum-nat.conf"
+
+      nat_internal_route_manage:
+        type: bool
+        default: true
+        description:
+          - When true, install an explicit main-table route for nat_internal_cidr via nat_internal_interface.
+          - Ensures bastion-originated traffic to internal nodes (ProxyJump inner hop) egresses the internal NIC.
+          - Set to false only if the route is managed externally (e.g., by cloud agent metadata).
+
+      nat_internal_ip:
+        type: str
+        default: ""
+        description:
+          - Optional explicit source address for the internal-subnet route (the src attribute).
+          - Empty string lets the kernel select the interface address automatically.
+          - "Example: 10.100.0.2"
+
+      nat_internal_route_unit:
+        type: str
+        default: /etc/systemd/system/stratum-internal-route.service
+        description:
+          - Absolute path where the systemd oneshot unit that persists the route is written.
+          - Only used when nat_internal_route_manage is true and the service manager is systemd.
+          - "Example: /etc/systemd/system/stratum-internal-route.service"

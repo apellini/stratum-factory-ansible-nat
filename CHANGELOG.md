@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.0] - 2026-07-03
+
+### Added
+
+- Internal-subnet route management (`nat_internal_route_manage: true`): installs an
+  explicit main-table route for `nat_internal_cidr` via `nat_internal_interface` so
+  bastion-originated traffic to internal nodes (ProxyJump inner hop to k3s at 10.100.0.3)
+  egresses the internal NIC (`eth1 src 10.100.0.2`) instead of falling through to the
+  `eth0` default route and being MASQUERADE'd. Fixes the 300 s `wait_for_k3s_ssh`
+  timeout on the two-VPC / multi-NIC bastion (D-INFRA-20).
+- Systemd oneshot unit (`stratum-internal-route.service`) persists the route across
+  reboots; skipped when `ansible_facts.service_mgr != 'systemd'` (molecule containers).
+- New defaults: `nat_internal_route_manage`, `nat_internal_ip`, `nat_internal_route_unit`.
+- New template: `templates/stratum-internal-route.service.j2`.
+
 ## [0.1.3] - 2026-07-03
 
 ### Fixed

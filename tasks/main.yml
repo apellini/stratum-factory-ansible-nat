@@ -50,3 +50,47 @@
       - RELATED
     jump: ACCEPT
   notify: Persist iptables rules
+
+# ── Internal-subnet route (fixes ProxyJump 2nd-hop on multi-NIC bastion) ─────
+# On a GCP dual-NIC VM the secondary interface's subnet route may not be in the
+# main routing table. Without it, bastion-originated traffic to 10.100.0.0/24
+# falls through to the eth0 default route, hits MASQUERADE, and never reaches
+# internal nodes. ip route replace is idempotent (add-or-update).
+
+- name: Check current internal-subnet route
+  ansible.builtin.command:
+    cmd: ip route show {{ nat_internal_cidr }}
+  register: _nat_internal_route_current
+  changed_when: false
+  when: nat_internal_route_manage | bool
+
+- name: Install internal-subnet route via internal interface (live)
+  ansible.builtin.command:
+    cmd: >-
+      ip route replace {{ nat_internal_cidr }}
+      dev {{ nat_internal_interface }}
+      {{ (nat_internal_ip != '') | ternary('src ' ~ nat_internal_ip, '') }}
+  changed_when: >-
+    ('dev ' ~ nat_internal_interface) not in _nat_internal_route_current.stdout
+  when: nat_internal_route_manage | bool
+
+- name: Template systemd oneshot unit for route persistence
+  ansible.builtin.template:
+    src: stratum-internal-route.service.j2
+    dest: "{{ nat_internal_route_unit }}"
+    owner: root
+    group: root
+    mode: "0644"
+  when:
+    - nat_internal_route_manage | bool
+    - ansible_facts['service_mgr'] == 'systemd'
+
+- name: Enable and start systemd unit to persist internal-subnet route
+  ansible.builtin.systemd_service:
+    name: "{{ nat_internal_route_unit | basename | regex_replace('\\.service$', '') }}"
+    enabled: true
+    daemon_reload: true
+    state: started
+  when:
+    - nat_internal_route_manage | bool
+    - ansible_facts['service_mgr'] == 'systemd'

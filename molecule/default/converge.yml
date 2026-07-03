@@ -5,3 +5,14 @@
 
   roles:
     - role: stratum_factory.nat
+      vars:
+        # Docker containers have a single NIC (eth0). Mirror it for both
+        # external and internal so the MASQUERADE/FORWARD rules apply on the
+        # same interface, keeping existing assertions valid.
+        nat_external_interface: eth0
+        nat_internal_interface: eth0
+        # Use a non-default test CIDR so the route assertion is unambiguous.
+        nat_internal_cidr: "192.0.2.0/24"
+        # systemd is not available inside the molecule docker container —
+        # the route-persistence unit task is guarded by service_mgr == 'systemd'
+        # and will be skipped automatically; the live route task still runs.

@@ -29,3 +29,16 @@
           - "'MASQUERADE' in nat_rules.stdout"
         fail_msg: "MASQUERADE rule not found in iptables nat table. Rules: {{ nat_rules.stdout }}"
         success_msg: "MASQUERADE rule present in iptables nat table"
+
+    - name: Read internal-subnet route
+      ansible.builtin.command:
+        cmd: ip route show 192.0.2.0/24
+      register: internal_route
+      changed_when: false
+
+    - name: Assert internal-subnet route is present via eth0
+      ansible.builtin.assert:
+        that:
+          - "'dev eth0' in internal_route.stdout"
+        fail_msg: "Internal-subnet route 192.0.2.0/24 via eth0 not found. Got: {{ internal_route.stdout }}"
+        success_msg: "Internal-subnet route 192.0.2.0/24 present via eth0"
