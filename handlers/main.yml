@@ -1,5 +1,5 @@
 ---
 - name: Persist iptables rules
   ansible.builtin.shell:
-    cmd: iptables-save > /etc/iptables/rules.v4
+    cmd: "{{ 'iptables-save > /etc/iptables/rules.v4' if ansible_facts['os_family'] == 'Debian' else 'service iptables save' }}"
   changed_when: true
