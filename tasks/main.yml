@@ -19,12 +19,35 @@
     cache_valid_time: 3600
   when: ansible_facts['os_family'] == "Debian"
 
-- name: Install iptables-persistent (non-interactive)
+- name: Install iptables-persistent (Debian/Ubuntu)
   ansible.builtin.package:
     name: iptables-persistent
     state: present
   environment:
     DEBIAN_FRONTEND: noninteractive
+  when: ansible_facts['os_family'] == "Debian"
+
+- name: Disable firewalld (RHEL/Rocky — conflicts with manual iptables management)
+  ansible.builtin.service:
+    name: firewalld
+    state: stopped
+    enabled: false
+  when:
+    - ansible_facts['os_family'] == "RedHat"
+    - ansible_facts['services']['firewalld.service'] is defined
+
+- name: Install iptables-services (RHEL/Rocky)
+  ansible.builtin.package:
+    name: iptables-services
+    state: present
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Enable and start iptables service (RHEL/Rocky)
+  ansible.builtin.service:
+    name: iptables
+    enabled: true
+    state: started
+  when: ansible_facts['os_family'] == "RedHat"
 
 # ── Interface resolution ───────────────────────────────────────────────────────
 # When a caller sets nat_external_interface / nat_internal_interface explicitly
