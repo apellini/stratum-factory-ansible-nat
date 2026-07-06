@@ -7,8 +7,8 @@
   when: ansible_facts['os_family'] == "Debian"
 
 - name: Persist iptables rules (RHEL/Rocky)
-  ansible.builtin.command:
-    cmd: service iptables save
+  ansible.builtin.shell:
+    cmd: iptables-save > /etc/sysconfig/iptables
   listen: Persist iptables rules
   changed_when: true
   when: ansible_facts['os_family'] == "RedHat"
