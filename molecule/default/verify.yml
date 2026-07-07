@@ -42,3 +42,16 @@
           - "'dev eth0' in internal_route.stdout"
         fail_msg: "Internal-subnet route 192.0.2.0/24 via eth0 not found. Got: {{ internal_route.stdout }}"
         success_msg: "Internal-subnet route 192.0.2.0/24 present via eth0"
+
+    - name: Dump FORWARD chain rules
+      ansible.builtin.command:
+        cmd: iptables -S FORWARD
+      register: forward_rules
+      changed_when: false
+
+    - name: Assert no blocking REJECT rule in FORWARD chain
+      ansible.builtin.assert:
+        that:
+          - "'REJECT' not in forward_rules.stdout"
+        fail_msg: "Blocking REJECT rule found in FORWARD chain: {{ forward_rules.stdout }}"
+        success_msg: "No REJECT rule in FORWARD chain — NAT forwarding unblocked"
