@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.3] - 2026-07-07
+
+### Fixed
+
+- iptables-services on RHEL/Rocky 9 ships a default `/etc/sysconfig/iptables` that
+  sets `FORWARD DROP` policy and appends a `REJECT --reject-with icmp-host-prohibited`
+  rule. After the `iptables` service starts, the role's own FORWARD ACCEPT rules were
+  appended **after** the REJECT rule and therefore never reached, blocking all forwarded
+  packets (k3s → bastion → internet). Added two tasks that run after service start and
+  before the NAT rules: one removes the default REJECT rule (`state: absent`), the other
+  sets the FORWARD chain default policy to ACCEPT. Both are idempotent and RHEL-only
+  (D-INFRA-28).
+
 ## [0.3.0] - 2026-07-03
 
 ### Changed
