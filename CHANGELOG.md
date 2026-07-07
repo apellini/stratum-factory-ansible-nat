@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.4] - 2026-07-07
+
+### Fixed
+
+- Revert RHEL/Rocky `Persist iptables rules` handler from
+  `ansible.builtin.command: service iptables save` back to
+  `ansible.builtin.shell: cmd: iptables-save > /etc/sysconfig/iptables`.
+  The `command` form triggered ansible-lint `command-instead-of-module[service]`
+  (profile: production), breaking CI on every wrapper that pins this role.
+
 ## [0.4.3] - 2026-07-07
 
 ### Fixed
