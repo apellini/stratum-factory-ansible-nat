@@ -49,6 +49,20 @@
     state: started
   when: ansible_facts['os_family'] == "RedHat"
 
+- name: Remove iptables-services default FORWARD REJECT rule (RHEL/Rocky)
+  ansible.builtin.iptables:
+    chain: FORWARD
+    jump: REJECT
+    reject_with: icmp-host-prohibited
+    state: absent
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Set FORWARD chain default policy to ACCEPT (RHEL/Rocky — iptables-services default is DROP)
+  ansible.builtin.iptables:
+    chain: FORWARD
+    policy: ACCEPT
+  when: ansible_facts['os_family'] == "RedHat"
+
 # ── Interface resolution ───────────────────────────────────────────────────────
 # When a caller sets nat_external_interface / nat_internal_interface explicitly
 # those values are used as-is (override path — also exercised by molecule tests).
